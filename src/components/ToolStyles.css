@@ -1,0 +1,45 @@
+/* Tool Status Lines (Perplexity Style) */
+.tool-status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    animation: fadeIn 0.3s ease;
+    width: 100%;
+    margin-left: 56px; /* Align with AI text (avatar width approx) */
+}
+
+.tool-icon {
+    font-size: 1.1rem;
+    animation: pulse 2s infinite;
+}
+
+.tool-name {
+    font-weight: 600;
+    color: var(--accent-primary);
+    text-transform: capitalize;
+}
+
+.tool-params {
+    font-style: italic;
+    opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+[data-theme='dark'] .tool-status-line {
+    color: #a0a0a0;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0.6; transform: scale(0.95); }
+}
+
+/* User Info Styling (For later if needed) */

@@ -1,0 +1,199 @@
+.live-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 10, 20, 0.95);
+    backdrop-filter: blur(20px);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.5s ease;
+}
+
+.live-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 800px;
+    padding: 20px;
+}
+
+/* AI Logo Container */
+.ai-logo-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-orb {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #a78bfa, #7c3aed, #4c1d95);
+    box-shadow: 0 0 60px rgba(124, 58, 237, 0.5);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Animations based on state */
+.ai-logo-container.listening .ai-orb {
+    animation: breathe 3s ease-in-out infinite;
+    box-shadow: 0 0 80px rgba(124, 58, 237, 0.6);
+}
+
+.ai-logo-container.speaking .ai-orb {
+    animation: talk 0.5s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 30% 30%, #34d399, #10b981, #059669);
+    box-shadow: 0 0 80px rgba(16, 185, 129, 0.6);
+}
+
+.ai-logo-container.thinking .ai-orb {
+    animation: spin 2s linear infinite;
+    background: radial-gradient(circle at 30% 30%, #f472b6, #db2777, #9d174d);
+    box-shadow: 0 0 80px rgba(219, 39, 119, 0.6);
+}
+
+/* Orbital Rings */
+.orbital-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.ring-1 {
+    width: 160px;
+    height: 160px;
+    animation: rotate 10s linear infinite;
+    border-top-color: rgba(124, 58, 237, 0.5);
+}
+
+.ring-2 {
+    width: 220px;
+    height: 220px;
+    animation: rotate-reverse 15s linear infinite;
+    border-bottom-color: rgba(16, 185, 129, 0.5);
+}
+
+.ring-3 {
+    width: 280px;
+    height: 280px;
+    animation: rotate 20s linear infinite;
+    border-left-color: rgba(219, 39, 119, 0.5);
+}
+
+/* Status Text */
+.status-text {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 300;
+    margin-top: 20px;
+}
+
+/* Transcript Display */
+.live-transcript {
+    font-size: 1.5rem;
+    text-align: center;
+    color: white;
+    min-height: 80px;
+    font-weight: 300;
+    line-height: 1.5;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    opacity: 0.9;
+}
+
+.live-response {
+    font-size: 1.2rem;
+    text-align: center;
+    color: #a78bfa;
+    margin-top: 20px;
+    /* font-style: italic; Removed per user request */
+    max-width: 600px;
+}
+
+/* Exit Button */
+.exit-btn {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exit-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes breathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes talk {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.15);
+        filter: brightness(1.2);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg) scale(0.9);
+    }
+
+    to {
+        transform: rotate(360deg) scale(0.9);
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotate-reverse {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}

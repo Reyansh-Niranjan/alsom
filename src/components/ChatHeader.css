@@ -1,0 +1,142 @@
+/* Chat Header */
+.chat-header-modern {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--light-bg);
+    border-bottom: 1px solid var(--light-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(10px);
+}
+
+.chat-header-modern.dark {
+    background: var(--dark-surface);
+    border-bottom-color: var(--dark-border);
+}
+
+.header-title-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.header-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--light-text-primary);
+    margin: 0;
+}
+
+.dark .header-title {
+    color: var(--dark-text-primary);
+}
+
+.edit-title-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--light-text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0;
+}
+
+.dark .edit-title-btn {
+    color: var(--dark-text-secondary);
+}
+
+.header-title-section:hover .edit-title-btn {
+    opacity: 1;
+}
+
+.edit-title-btn:hover {
+    background: var(--light-surface);
+    color: var(--light-text-primary);
+}
+
+.dark .edit-title-btn:hover {
+    background: var(--dark-surface-hover);
+    color: var(--dark-text-primary);
+}
+
+/* Title Edit Mode */
+.title-edit-mode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.title-edit-mode input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--light-accent);
+    background: var(--light-bg);
+    color: var(--light-text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    outline: none;
+}
+
+.dark .title-edit-mode input {
+    background: var(--dark-bg);
+    border-color: var(--dark-accent);
+    color: var(--dark-text-primary);
+}
+
+.title-edit-mode button {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: var(--light-surface);
+    color: var(--light-text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.dark .title-edit-mode button {
+    background: var(--dark-surface-hover);
+    color: var(--dark-text-primary);
+}
+
+.save-btn:hover {
+    background: var(--light-accent);
+    color: #ffffff;
+}
+
+.dark .save-btn:hover {
+    background: var(--dark-accent);
+}
+
+.cancel-btn:hover {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .chat-header-modern {
+        padding: 12px 16px 12px 60px;
+        /* Extra padding for mobile sidebar toggle */
+    }
+
+    .header-title {
+        font-size: 1.1rem;
+    }
+}

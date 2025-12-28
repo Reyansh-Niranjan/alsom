@@ -1,0 +1,134 @@
+.thinking-block {
+    margin-top: 8px;
+    border-radius: 12px;
+    background: rgba(124, 58, 237, 0.08);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.dark .thinking-block {
+    background: rgba(124, 58, 237, 0.15);
+    border-color: rgba(124, 58, 237, 0.3);
+}
+
+.thinking-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease;
+}
+
+.thinking-header:hover {
+    background: rgba(124, 58, 237, 0.1);
+}
+
+.dark .thinking-header:hover {
+    background: rgba(124, 58, 237, 0.2);
+}
+
+.thinking-icon {
+    color: #7c3aed;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.thinking-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #7c3aed;
+    flex: 1;
+}
+
+.thinking-toggle {
+    font-size: 0.75rem;
+    color: var(--light-text-secondary);
+    transition: transform 0.3s ease;
+}
+
+.dark .thinking-toggle {
+    color: var(--dark-text-secondary);
+}
+
+.thinking-toggle.expanded {
+    transform: rotate(180deg);
+}
+
+.thinking-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.thinking-content.expanded {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.thinking-text {
+    padding: 0 14px 14px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--light-text-secondary);
+    white-space: pre-wrap;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.dark .thinking-text {
+    color: var(--dark-text-secondary);
+}
+
+/* Loading animation for thinking in progress */
+.thinking-loading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    color: #7c3aed;
+    font-size: 0.85rem;
+}
+
+.thinking-loading .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #7c3aed;
+    animation: thinkingDots 1.4s infinite;
+}
+
+.thinking-loading .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.thinking-loading .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes thinkingDots {
+
+    0%,
+    60%,
+    100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+
+    30% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
