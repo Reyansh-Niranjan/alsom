@@ -143,21 +143,34 @@ export async function getMessagesByConversation(conversationId) {
 
 // User Memory Functions
 export async function getUserMemory(userId) {
+  // Only allow if userId is present and matches current session
+  const session = supabase.auth.getSession ? (await supabase.auth.getSession()).data.session : null;
+  if (!session || !session.user || session.user.id !== userId) {
+    console.warn('User not authenticated or mismatched user_id');
+    return "";
+  }
   const { data, error } = await supabase
     .from('user_memory')
     .select('content')
     .eq('user_id', userId)
     .eq('key', 'general_notes')
-    .single();
+    .order('id', { ascending: false })
+    .limit(1);
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 is no rows
+  if (error) {
     console.error('Error fetching memory:', error);
     return "";
   }
-  return data ? data.content : "";
+  return data && data.length > 0 ? data[0].content : "";
 }
 
 export async function updateUserMemory(userId, newContent) {
+  // Only allow if userId is present and matches current session
+  const session = supabase.auth.getSession ? (await supabase.auth.getSession()).data.session : null;
+  if (!session || !session.user || session.user.id !== userId) {
+    console.warn('User not authenticated or mismatched user_id');
+    return false;
+  }
   const { error } = await supabase
     .from('user_memory')
     .upsert(
