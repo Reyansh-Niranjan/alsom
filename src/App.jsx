@@ -33,6 +33,8 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(window.innerWidth < 768);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
   // New states for RAG, Thinking, and Voice
   const [documents, setDocuments] = useState([]);
   const [ttsEnabled, setTtsEnabled] = useState(false);
@@ -270,7 +272,9 @@ function App() {
   };
 
   const toggleTheme = () => {
+    setIsTransitioning(true);
     setTheme(theme === 'light' ? 'dark' : 'light');
+    setTimeout(() => setIsTransitioning(false), 400);
   };
 
   const toggleLiveMode = (isRecording) => {
@@ -290,7 +294,7 @@ function App() {
   const currentConv = getCurrentConversation();
 
   return (
-    <div className={`app-container ${theme}`}>
+    <div className={`app-container ${theme} ${isTransitioning ? 'theme-transition' : ''}`}>
       {/* Full Screen Live Audio Overlay */}
       {isLiveMode && (
         <LiveAudioInterface

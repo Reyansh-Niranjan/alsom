@@ -7,7 +7,7 @@
   background: var(--light-surface);
 }
 
-.app-container.dark {
+[data-theme="dark"] .app-container {
   background: var(--dark-bg);
 }
 
@@ -336,6 +336,10 @@
   .file-upload-section {
     padding: 8px 16px;
   }
+}
+
+.app-container.theme-transition {
+  filter: blur(2px);
 }
 
 /* Voice controls in input bar */
