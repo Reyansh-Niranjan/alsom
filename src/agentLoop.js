@@ -85,9 +85,20 @@ async function executeTool(toolName, toolContent, userId, conversationId) {
                     const wikiData = await wikiResponse.json();
 
                     if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
-                        const topResults = wikiData.query.search.slice(0, 3).map(r =>
-                            `[Title: ${r.title}]\nSnippet: ${r.snippet.replace(/<[^>]*>/g, '')}\nURL: https://en.wikipedia.org/?curid=${r.pageid}`
-                        ).join('\n\n');
+                        const topResults = wikiData.query.search.slice(0, 3).map(r => {
+                            // More robust HTML sanitization: remove all HTML tags multiple times to handle incomplete tags
+                            let cleanSnippet = r.snippet;
+                            let prevSnippet = '';
+                            // Loop until no more changes occur (handles nested/incomplete tags)
+                            while (cleanSnippet !== prevSnippet) {
+                                prevSnippet = cleanSnippet;
+                                cleanSnippet = cleanSnippet.replace(/<[^>]*>/g, '');
+                            }
+                            // Also remove any remaining < or > characters that might be incomplete tags
+                            cleanSnippet = cleanSnippet.replace(/[<>]/g, '');
+                            
+                            return `[Title: ${r.title}]\nSnippet: ${cleanSnippet}\nURL: https://en.wikipedia.org/?curid=${r.pageid}`;
+                        }).join('\n\n');
                         return `Found the following information on Wikipedia:\n${topResults}`;
                     } else {
                         return "No Wikipedia results found for this query.";
