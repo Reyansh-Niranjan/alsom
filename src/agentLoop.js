@@ -128,6 +128,7 @@ async function executeTool(toolName, toolContent, userId, conversationId) {
  */
 export async function runAgent(userId, conversationId, userMessage, hasDocuments, onToolCall) {
     const MAX_TURNS = 5;
+    const MIN_CONTENT_LENGTH = 10; // Minimum length to consider content substantial
     let turn = 0;
     let lastToolCallSignature = null;
 
@@ -259,7 +260,7 @@ STRICT RESTRICTIONS:
         // Check if there's substantial content to return
         const cleanedContent = aiText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
         
-        if (cleanedContent.length > 10) {
+        if (cleanedContent.length > MIN_CONTENT_LENGTH) {
             // If AI provided a substantial response without proper tags, return it
             console.log(`[Agent Turn ${turn + 1}] No structured output, returning direct response`);
             return {
