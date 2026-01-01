@@ -1,114 +1,121 @@
 import { sendMessageToGroq, getMessagesByConversation, getUserMemory, updateUserMemory } from './chatbot';
 import { searchDocuments } from './rag';
-import { supabase } from './chatbot';
 
 /**
  * Executes a specific tool requested by the AI
  */
 async function executeTool(toolName, toolContent, userId, conversationId) {
-    console.log(`Executing Tool: ${toolName} with ${toolContent}`);
+    console.log(`Executing Tool: ${toolName} with content: "${toolContent}"`);
 
-    switch (toolName.toLowerCase()) {
-        case 'time':
-            return new Date().toLocaleString();
+    try {
+        switch (toolName.toLowerCase()) {
+            case 'time':
+                return new Date().toLocaleString();
 
-        case 'docsearch':
-        case 'doc_search':
-            // content is the query
-            const docs = await searchDocuments(userId, toolContent, conversationId);
-            if (docs.length === 0) return "No relevant documents found.";
-            return docs.map(d => `[Source: ${d.filename}]\n${d.content.substring(0, 500)}...`).join('\n\n');
-
-        case 'history':
-        case 'historysearch':
-            try {
-                // Fetch actual chat history from Supabase
-                const allMessages = await getMessagesByConversation(conversationId);
-
-                // If specific query provided, filter by it
-                let relevantMsgs = allMessages;
-                if (toolContent && toolContent.trim().length > 0) {
-                    const query = toolContent.toLowerCase();
-                    relevantMsgs = allMessages.filter(m =>
-                        (m.content && m.content.toLowerCase().includes(query)) ||
-                        (m.role && m.role.toLowerCase().includes(query))
-                    );
-                }
-
-                // If no matches found with query, fallback to recent history
-                let fallbackNote = "";
-                if (relevantMsgs.length === 0 && toolContent) {
-                    relevantMsgs = allMessages;
-                    fallbackNote = `No exact matches found for "${toolContent}". Showing recent conversation instead:\n`;
-                }
-
-                // Take last 15 messages to avoid huge context
-                const recentMsgs = relevantMsgs.slice(-15);
-
-                if (recentMsgs.length === 0) return "No history available yet.";
-
-                return fallbackNote + recentMsgs.map(m =>
-                    `[${m.role.toUpperCase()}]: ${m.content.substring(0, 300)}` // Truncate long messages
-                ).join('\n');
-            } catch (err) {
-                return `History Error: ${err.message}`;
+            case 'docsearch':
+            case 'doc_search': {
+                // content is the query
+                const docs = await searchDocuments(userId, toolContent, conversationId);
+                if (docs.length === 0) return "No relevant documents found.";
+                return docs.map(d => `[Source: ${d.filename}]\n${d.content.substring(0, 500)}...`).join('\n\n');
             }
 
-        case 'websearch':
-        case 'web_search':
-            try {
-                // Check if Google Keys are available
-                const googleKey = import.meta.env.VITE_GOOGLE_API_KEY;
-                const googleCx = import.meta.env.VITE_GOOGLE_CX;
+            case 'history':
+            case 'historysearch':
+                try {
+                    // Fetch actual chat history from Supabase
+                    const allMessages = await getMessagesByConversation(conversationId);
 
-                if (googleKey && googleCx) {
-                    try {
-                        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleKey}&cx=${googleCx}&q=${encodeURIComponent(toolContent)}`;
-                        const gResponse = await fetch(googleUrl);
-                        const gData = await gResponse.json();
-
-                        if (gData.items && gData.items.length > 0) {
-                            const topResults = gData.items.slice(0, 3).map(r =>
-                                `[Title: ${r.title}]\nSnippet: ${r.snippet}\nURL: ${r.link}`
-                            ).join('\n\n');
-                            return `Found the following information on Google:\n${topResults}`;
-                        }
-                    } catch (gErr) {
-                        console.error("Google Search Failed", gErr);
+                    // If specific query provided, filter by it
+                    let relevantMsgs = allMessages;
+                    if (toolContent && toolContent.trim().length > 0) {
+                        const query = toolContent.toLowerCase();
+                        relevantMsgs = allMessages.filter(m =>
+                            (m.content && m.content.toLowerCase().includes(query)) ||
+                            (m.role && m.role.toLowerCase().includes(query))
+                        );
                     }
+
+                    // If no matches found with query, fallback to recent history
+                    let fallbackNote = "";
+                    if (relevantMsgs.length === 0 && toolContent) {
+                        relevantMsgs = allMessages;
+                        fallbackNote = `No exact matches found for "${toolContent}". Showing recent conversation instead:\n`;
+                    }
+
+                    // Take last 15 messages to avoid huge context
+                    const recentMsgs = relevantMsgs.slice(-15);
+
+                    if (recentMsgs.length === 0) return "No history available yet.";
+
+                    return fallbackNote + recentMsgs.map(m =>
+                        `[${m.role.toUpperCase()}]: ${m.content.substring(0, 300)}` // Truncate long messages
+                    ).join('\n');
+                } catch (err) {
+                    console.error('History tool error:', err);
+                    return `History Error: ${err.message}`;
                 }
 
-                // Use Wikipedia as a free, CORS-friendly web search alternative
-                const wikiResponse = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(toolContent)}&format=json&origin=*`);
-                const wikiData = await wikiResponse.json();
+            case 'websearch':
+            case 'web_search':
+                try {
+                    // Check if Google Keys are available
+                    const googleKey = import.meta.env.VITE_GOOGLE_API_KEY;
+                    const googleCx = import.meta.env.VITE_GOOGLE_CX;
 
-                if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
-                    const topResults = wikiData.query.search.slice(0, 3).map(r =>
-                        `[Title: ${r.title}]\nSnippet: ${r.snippet.replace(/<[^>]*>/g, '')}\nURL: https://en.wikipedia.org/?curid=${r.pageid}`
-                    ).join('\n\n');
-                    return `Found the following information on Wikipedia:\n${topResults}`;
+                    if (googleKey && googleCx) {
+                        try {
+                            const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleKey}&cx=${googleCx}&q=${encodeURIComponent(toolContent)}`;
+                            const gResponse = await fetch(googleUrl);
+                            const gData = await gResponse.json();
+
+                            if (gData.items && gData.items.length > 0) {
+                                const topResults = gData.items.slice(0, 3).map(r =>
+                                    `[Title: ${r.title}]\nSnippet: ${r.snippet}\nURL: ${r.link}`
+                                ).join('\n\n');
+                                return `Found the following information on Google:\n${topResults}`;
+                            }
+                        } catch (gErr) {
+                            console.error("Google Search Failed", gErr);
+                        }
+                    }
+
+                    // Use Wikipedia as a free, CORS-friendly web search alternative
+                    const wikiResponse = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(toolContent)}&format=json&origin=*`);
+                    const wikiData = await wikiResponse.json();
+
+                    if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
+                        const topResults = wikiData.query.search.slice(0, 3).map(r =>
+                            `[Title: ${r.title}]\nSnippet: ${r.snippet.replace(/<[^>]*>/g, '')}\nURL: https://en.wikipedia.org/?curid=${r.pageid}`
+                        ).join('\n\n');
+                        return `Found the following information on Wikipedia:\n${topResults}`;
+                    } else {
+                        return "No Wikipedia results found for this query.";
+                    }
+                } catch (e) {
+                    console.error('WebSearch tool error:', e);
+                    return `Web Search Error: ${e.message}`;
+                }
+
+            case 'userinfo':
+            case 'user_info':
+            case 'memory':
+                if (!toolContent || toolContent.trim().length === 0 || toolContent.toLowerCase() === 'read') {
+                    const memory = await getUserMemory(userId);
+                    return memory ? `Current User Info: ${memory}` : "No user info stored yet.";
                 } else {
-                    return "No Wikipedia results found for this query.";
+                    const current = await getUserMemory(userId);
+                    const updated = current ? `${current}\n- ${toolContent}` : `- ${toolContent}`;
+                    await updateUserMemory(userId, updated);
+                    return `Updated User Info. Current notes:\n${updated}`;
                 }
-            } catch (e) {
-                return `Web Search Error: ${e.message}`;
-            }
 
-        case 'userinfo':
-        case 'user_info':
-        case 'memory':
-            if (!toolContent || toolContent.trim().length === 0 || toolContent.toLowerCase() === 'read') {
-                const memory = await getUserMemory(userId);
-                return memory ? `Current User Info: ${memory}` : "No user info stored yet.";
-            } else {
-                const current = await getUserMemory(userId);
-                const updated = current ? `${current}\n- ${toolContent}` : `- ${toolContent}`;
-                await updateUserMemory(userId, updated);
-                return `Updated User Info. Current notes:\n${updated}`;
-            }
-
-        default:
-            return `Tool ${toolName} not found.`;
+            default:
+                return `Tool "${toolName}" not found. Available tools: Time, DocSearch, History, WebSearch, UserInfo`;
+        }
+    } catch (error) {
+        console.error(`Error executing tool ${toolName}:`, error);
+        return `Error executing ${toolName}: ${error.message}`;
     }
 }
 
@@ -175,25 +182,42 @@ STRICT RESTRICTIONS:
         const aiText = aiResult.content; // Content + Thinking
         const aiThinking = aiResult.thinking;
 
-        // Parse Output
-        const toolMatch = aiText.match(/<TOOL><(.*?)>(.*?)<\/\1><\/TOOL>/s) || aiText.match(/<TOOL><(.*?)>(.*?)<\/TOOL>/s); // Attempt to match generic
+        console.log(`[Agent Turn ${turn + 1}] AI Response:`, aiText.substring(0, 200));
 
+        // Parse Output - Improved regex patterns
         let toolName = null;
         let toolContent = null;
 
-        // Simple regex for specified format
-        const simpleToolMatch = aiText.match(/<TOOL>\s*<([a-zA-Z0-9_]+)>(.*?)<\/\1>\s*<\/TOOL>/s);
+        // Try multiple patterns for robustness
+        // Pattern 1: <TOOL><ToolName>content</ToolName></TOOL>
+        let toolMatch = aiText.match(/<TOOL>\s*<([a-zA-Z0-9_]+)>(.*?)<\/\1>\s*<\/TOOL>/s);
+        
+        // Pattern 2: More lenient - <TOOL><ToolName>content</TOOL>
+        if (!toolMatch) {
+            toolMatch = aiText.match(/<TOOL>\s*<([a-zA-Z0-9_]+)>(.*?)<\/TOOL>/s);
+        }
 
-        if (simpleToolMatch) {
-            toolName = simpleToolMatch[1];
-            toolContent = simpleToolMatch[2];
+        // Pattern 3: Even more lenient - just find tool tags
+        if (!toolMatch) {
+            const toolStartMatch = aiText.match(/<TOOL>\s*<([a-zA-Z0-9_]+)>/);
+            if (toolStartMatch) {
+                const toolTagName = toolStartMatch[1];
+                const contentMatch = aiText.match(new RegExp(`<${toolTagName}>(.*?)</${toolTagName}>`, 's'));
+                if (contentMatch) {
+                    toolMatch = [null, toolTagName, contentMatch[1]];
+                }
+            }
+        }
+
+        if (toolMatch) {
+            toolName = toolMatch[1];
+            toolContent = (toolMatch[2] || '').trim();
+            console.log(`[Agent Turn ${turn + 1}] Tool detected: ${toolName} with content: "${toolContent}"`);
         }
 
         const responseMatch = aiText.match(/<Response>([\s\S]*?)<\/Response>/);
 
-        // 1. If Response found, check later (Prioritize Tools)
-
-        // 2. If Tool found, Execute
+        // Priority: Execute tool first if found, then check for response
         if (toolName) {
             // Loop Prevention: Check if exact same tool call was just made
             const currentSignature = `${toolName}:${toolContent}`;
@@ -210,6 +234,7 @@ STRICT RESTRICTIONS:
             if (onToolCall) onToolCall(toolName, toolContent);
 
             const toolResult = await executeTool(toolName, toolContent, userId, conversationId);
+            console.log(`[Agent Turn ${turn + 1}] Tool result: ${toolResult.substring(0, 100)}...`);
 
             // Add to history
             conversationContext.push({ role: 'assistant', content: aiText });
@@ -219,20 +244,44 @@ STRICT RESTRICTIONS:
             continue;
         }
 
-        // 3. If Response found (and no tool executed), return it
+        // If Response tag found (and no tool was executed), return it
         if (responseMatch) {
+            const finalContent = responseMatch[1].trim();
+            console.log(`[Agent Turn ${turn + 1}] Final response provided`);
             return {
-                content: responseMatch[1],
+                content: finalContent,
                 thinking: aiThinking
             };
         }
 
-        // 3. Fallback (Plain Text)
-        return {
-            content: aiText.replace(/<think>[\s\S]*?<\/think>/g, '').trim(),
-            thinking: aiThinking
-        };
+        // Fallback: No tool or response tag found
+        // This might mean the AI provided a direct answer without wrapping it
+        // Check if there's substantial content to return
+        const cleanedContent = aiText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        
+        if (cleanedContent.length > 10) {
+            // If AI provided a substantial response without proper tags, return it
+            console.log(`[Agent Turn ${turn + 1}] No structured output, returning direct response`);
+            return {
+                content: cleanedContent,
+                thinking: aiThinking
+            };
+        }
+
+        // If we get here, the AI response was unclear/empty
+        // Add a prompt to help the AI
+        console.warn(`[Agent Turn ${turn + 1}] Unclear AI response, prompting for clarification`);
+        conversationContext.push({ role: 'assistant', content: aiText });
+        conversationContext.push({ 
+            role: 'system', 
+            content: 'Your previous response was unclear. Please provide either:\n1. A tool call in format: <TOOL><ToolName>query</ToolName></TOOL>\n2. OR a final response in format: <Response>your answer</Response>' 
+        });
+        
+        turn++;
     }
 
-    return { content: "I'm sorry, I got stuck in a loop trying to process your request.", thinking: null };
+    return { 
+        content: "I apologize, but I'm having difficulty processing your request. Could you please rephrase or simplify your question?", 
+        thinking: null 
+    };
 }
