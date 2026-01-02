@@ -92,7 +92,7 @@ The application exposes a `/api/chat` endpoint for external sites to integrate w
 
 **Example Usage:**
 ```javascript
-const response = await fetch("https://alsom.vercel.app/api/chat", {
+const response = await fetch("https://your-app.vercel.app/api/chat", {
   method: "POST",
   body: JSON.stringify({
     site: "myblog",

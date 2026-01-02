@@ -70,12 +70,15 @@ async function executeTool(toolName, toolContent) {
 
                     if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
                         const topResults = wikiData.query.search.slice(0, 3).map(r => {
-                            // More robust HTML sanitization
+                            // HTML sanitization with iteration limit to prevent infinite loops
                             let cleanSnippet = r.snippet;
                             let prevSnippet = '';
-                            while (cleanSnippet !== prevSnippet) {
+                            let iterations = 0;
+                            const maxIterations = 10;
+                            while (cleanSnippet !== prevSnippet && iterations < maxIterations) {
                                 prevSnippet = cleanSnippet;
                                 cleanSnippet = cleanSnippet.replace(/<[^>]*>/g, '');
+                                iterations++;
                             }
                             cleanSnippet = cleanSnippet.replace(/[<>]/g, '');
 
@@ -125,9 +128,9 @@ async function callGroqAPI(messages) {
             if (!response.ok) {
                 // Handle Rate Limit specifically
                 if (response.status === 429) {
-                    const retryAfter = data.error?.message?.match(/try again in ([\d.]+)s/)?.[1] ||
-                        data.error?.message?.match(/try again in ([\d.]+)ms/)?.[1] / 1000 ||
-                        2;
+                    const matchSeconds = data.error?.message?.match(/try again in ([\d.]+)s/)?.[1];
+                    const matchMs = data.error?.message?.match(/try again in ([\d.]+)ms/)?.[1];
+                    const retryAfter = matchSeconds ? parseFloat(matchSeconds) : (matchMs ? parseFloat(matchMs) / 1000 : 2);
 
                     console.warn(`Rate limit hit (Attempt ${attempt + 1}). Retrying in ${retryAfter}s...`);
                     await delay(Math.ceil(retryAfter * 1000) + 100);
@@ -351,7 +354,8 @@ STRICT RESTRICTIONS:
  * Main handler for the /api/chat endpoint
  */
 export default async function handler(req, res) {
-    // Set CORS headers
+    // Set CORS headers - using wildcard to allow any external site to call this API
+    // This is intentional as the API is designed to be a public endpoint for other sites
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
