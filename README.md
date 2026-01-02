@@ -40,6 +40,80 @@ npm run dev
 - Push to GitHub and connect the repo to Vercel.
 - Vercel will use `vercel.json` for build and environment variables.
 
+## API Endpoint
+
+The application exposes a `/api/chat` endpoint for external sites to integrate with the chatbot.
+
+### POST `/api/chat`
+
+**Request Body:**
+```json
+{
+  "site": "myblog",
+  "session_id": "unique-session-identifier",
+  "messages": [
+    { "role": "user", "content": "Hello, how are you?" }
+  ],
+  "tools": ["time", "websearch"]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `site` | string | Yes | Identifier for the calling site |
+| `session_id` | string | Yes | Unique session ID for threading conversations |
+| `messages` | array | Yes | Array of message objects with `role` and `content` |
+| `tools` | array | No | List of tools to enable. Available: `time`, `websearch` |
+
+**Response Body:**
+```json
+{
+  "reply": "I'm doing well, thank you for asking!",
+  "tool_calls": [],
+  "usage": {
+    "prompt_tokens": 150,
+    "completion_tokens": 25,
+    "total_tokens": 175
+  },
+  "debug": {
+    "site": "myblog",
+    "session_id": "unique-session-identifier",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `reply` | string | The AI model's text response |
+| `tool_calls` | array | Array of tool calls made (if any), each with `tool`, `input`, `output` |
+| `usage` | object | Token usage information |
+| `debug` | object | Debug information including site, session_id, and timestamp |
+
+**Example Usage:**
+```javascript
+const response = await fetch("https://your-app.vercel.app/api/chat", {
+  method: "POST",
+  body: JSON.stringify({
+    site: "myblog",
+    session_id: "user-123-session-456",
+    messages: [
+      { role: "user", content: "What time is it?" }
+    ],
+    tools: ["time"]
+  }),
+  headers: { "Content-Type": "application/json" }
+});
+
+const data = await response.json();
+console.log(data.reply);
+```
+
+**Environment Variables Required for API:**
+- `GROQ_KEY` - Your Groq API key (required)
+- `GOOGLE_API_KEY` - Google Custom Search API key (optional, for enhanced web search)
+- `GOOGLE_CX` - Google Custom Search Engine ID (optional)
+
 ## Notes
 - Keep your secret keys safe.
 - Authentication is handled via Supabase Auth UI (email/password by default).
