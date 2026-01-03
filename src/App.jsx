@@ -18,6 +18,7 @@ import FileUpload from './components/FileUpload';
 import ThinkingBlock from './components/ThinkingBlock';
 import VoiceMode, { speakText, stopSpeaking } from './components/VoiceMode';
 import { ChatBubbleIcon, UserIcon, RobotIcon, SendIcon } from './components/Icons';
+import AnimatedLogo from './components/AnimatedLogo';
 
 import LiveAudioInterface from './components/LiveAudioInterface';
 import { runAgent } from './agentLoop';
@@ -375,7 +376,7 @@ function App() {
             if (msg.isTool) {
               return (
                 <div key={idx} className="tool-status-line">
-                  <span className="tool-icon">⚡</span>
+                  <AnimatedLogo size={24} variant="tool" />
                   <span className="tool-name">{msg.toolName}</span>
                   <span className="tool-params">({msg.toolParams})</span>
                 </div>

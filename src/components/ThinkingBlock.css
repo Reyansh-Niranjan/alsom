@@ -96,10 +96,20 @@
 .thinking-loading {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
+    gap: 10px;
+    padding: 12px 16px;
     color: #7c3aed;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: rgba(124, 58, 237, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    margin-bottom: 8px;
+}
+
+.dark .thinking-loading {
+    background: rgba(124, 58, 237, 0.12);
+    border-color: rgba(124, 58, 237, 0.25);
 }
 
 .thinking-loading .dot {

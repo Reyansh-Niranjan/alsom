@@ -2,14 +2,34 @@
 .tool-status-line {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    margin: 4px 0;
+    gap: 10px;
+    padding: 10px 16px;
+    margin: 6px 0;
     font-size: 0.9rem;
     color: var(--text-secondary);
-    animation: fadeIn 0.3s ease;
+    animation: toolFadeIn 0.3s ease;
     width: 100%;
     margin-left: 56px; /* Align with AI text (avatar width approx) */
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+[data-theme='dark'] .tool-status-line {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.2);
+    color: #a0a0a0;
+}
+
+@keyframes toolFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .tool-icon {
@@ -30,10 +50,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 300px;
-}
-
-[data-theme='dark'] .tool-status-line {
-    color: #a0a0a0;
 }
 
 @keyframes pulse {

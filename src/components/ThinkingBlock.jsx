@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ThinkingIcon } from './Icons';
+import AnimatedLogo from './AnimatedLogo';
 import './ThinkingBlock.css';
 
 function ThinkingBlock({ thinking, isLoading = false }) {
@@ -8,7 +9,7 @@ function ThinkingBlock({ thinking, isLoading = false }) {
     if (isLoading) {
         return (
             <div className="thinking-loading">
-                <ThinkingIcon size={16} color="#7c3aed" />
+                <AnimatedLogo size={28} variant="thinking" />
                 <span>Thinking</span>
                 <span className="dot"></span>
                 <span className="dot"></span>
