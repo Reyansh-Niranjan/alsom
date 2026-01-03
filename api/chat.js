@@ -3,15 +3,19 @@
  * 
  * Accepts POST requests with:
  * - site: string (identifier for the calling site)
+ * - user_id: string (unique user identifier for privacy, REQUIRED)
  * - session_id: string (for threading conversations)
- * - messages: array of { role, content }
- * - tools: optional array of tool names to enable
+ * - messages: array of { role, content } - system messages are appended to base prompt
+ * - tools: optional array of tool names to enable (built-in tools)
+ * - add_tools: boolean (if true, includes tool call details in response)
+ * - additional_tools: optional array of external tools {name, description}
  * 
  * Returns:
- * - reply: model text response
- * - tool_calls: array of tool calls if any were made
+ * - reply: model text response (only <Response> tag content)
+ * - tool_calls: array of built-in tool calls (only if add_tools=true)
+ * - external_tool_calls: array of external tool calls (only if add_tools=true and external tools used)
  * - usage: token usage info
- * - debug: optional debug information
+ * - debug: debug information
  */
 
 // Helper for delay
