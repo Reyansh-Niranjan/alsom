@@ -197,7 +197,7 @@ if (data.external_tool_calls && data.external_tool_calls.length > 0) {
 
 **Key Features:**
 
-1. **Privacy**: `user_id` is required for proper data isolation between users
+1. **Privacy**: `user_id` is required for associating requests with specific users. External applications should use this to track which user made the request.
 2. **System Messages**: Messages with `role: "system"` are appended to the base system prompt, not overwriting it
 3. **Built-in Tools**: Tools like `time` and `websearch` are executed by the alsom server
 4. **External Tools**: When `additional_tools` are provided and the AI calls them, they are returned as `external_tool_calls` for the calling application to execute

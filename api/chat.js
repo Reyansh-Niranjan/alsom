@@ -21,6 +21,17 @@
 // Helper for delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Helper to extract tool name from tool definition
+function getToolName(tool) {
+    if (typeof tool === 'string') {
+        return tool;
+    }
+    if (typeof tool === 'object' && tool !== null && tool.name) {
+        return tool.name;
+    }
+    return null;
+}
+
 // Available tools configuration
 const AVAILABLE_TOOLS = {
     time: {
@@ -203,8 +214,12 @@ async function runAgentLoop(messages, enabledTools = [], maxTurns = 5, systemMes
     if (externalTools.length > 0) {
         toolsDescription += '\nADDITIONAL TOOLS (External - call these when needed):\n';
         externalTools.forEach((tool, index) => {
-            const toolName = tool.name || tool;
-            const toolDesc = tool.description || 'External tool';
+            const toolName = getToolName(tool);
+            if (!toolName) {
+                console.warn('External tool missing name:', tool);
+                return;
+            }
+            const toolDesc = (typeof tool === 'object' && tool.description) ? tool.description : 'External tool';
             toolsDescription += `${toolsList.length + index + 1}. <TOOL><${toolName}>query</${toolName}></TOOL> - ${toolDesc}\n`;
         });
     }
@@ -319,8 +334,8 @@ STRICT RESTRICTIONS:
             const isBuiltInTool = toolsList.some(t => t.toLowerCase() === toolName.toLowerCase());
             // Check if tool is an external tool
             const externalTool = externalTools.find(t => {
-                const tName = typeof t === 'string' ? t : t.name;
-                return tName.toLowerCase() === toolName.toLowerCase();
+                const tName = getToolName(t);
+                return tName && tName.toLowerCase() === toolName.toLowerCase();
             });
 
             let toolResult;
@@ -475,6 +490,16 @@ export default async function handler(req, res) {
         if (additional_tools && !Array.isArray(additional_tools)) {
             return res.status(400).json({ error: '"additional_tools" must be an array if provided' });
         }
+        
+        // Validate each external tool has a name
+        for (const tool of externalTools) {
+            const toolName = getToolName(tool);
+            if (!toolName) {
+                return res.status(400).json({ 
+                    error: 'Each tool in "additional_tools" must be a string or an object with a "name" property' 
+                });
+            }
+        }
 
         // Validate add_tools flag
         const shouldReturnToolCalls = add_tools === true;
@@ -494,8 +519,8 @@ export default async function handler(req, res) {
         if (shouldReturnToolCalls) {
             response.tool_calls = result.tool_calls || [];
             
-            // If there are external tools, include them separately
-            if (externalTools.length > 0 && result.external_tool_calls) {
+            // Include external tool calls if they were made
+            if (result.external_tool_calls && result.external_tool_calls.length > 0) {
                 response.external_tool_calls = result.external_tool_calls;
             }
         }
