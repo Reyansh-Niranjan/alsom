@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 import './components/ToolStyles.css';
 import {
@@ -295,6 +296,7 @@ function App() {
 
   return (
     <div className={`app-container ${theme} ${isTransitioning ? 'theme-transition' : ''}`}>
+      <Analytics />
       {/* Full Screen Live Audio Overlay */}
       {isLiveMode && (
         <LiveAudioInterface
