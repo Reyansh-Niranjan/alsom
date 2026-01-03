@@ -3,19 +3,34 @@
  * 
  * Accepts POST requests with:
  * - site: string (identifier for the calling site)
+ * - user_id: string (unique user identifier for privacy, REQUIRED)
  * - session_id: string (for threading conversations)
- * - messages: array of { role, content }
- * - tools: optional array of tool names to enable
+ * - messages: array of { role, content } - system messages are appended to base prompt
+ * - tools: optional array of tool names to enable (built-in tools)
+ * - add_tools: boolean (if true, includes tool call details in response)
+ * - additional_tools: optional array of external tools {name, description}
  * 
  * Returns:
- * - reply: model text response
- * - tool_calls: array of tool calls if any were made
+ * - reply: model text response (only <Response> tag content)
+ * - tool_calls: array of built-in tool calls (only if add_tools=true)
+ * - external_tool_calls: array of external tool calls (only if add_tools=true and external tools used)
  * - usage: token usage info
- * - debug: optional debug information
+ * - debug: debug information
  */
 
 // Helper for delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper to extract tool name from tool definition
+function getToolName(tool) {
+    if (typeof tool === 'string') {
+        return tool;
+    }
+    if (typeof tool === 'object' && tool !== null && tool.name) {
+        return tool.name;
+    }
+    return null;
+}
 
 // Available tools configuration
 const AVAILABLE_TOOLS = {
@@ -175,12 +190,13 @@ async function callGroqAPI(messages) {
 /**
  * Main agent loop with tool execution
  */
-async function runAgentLoop(messages, enabledTools = [], maxTurns = 5) {
+async function runAgentLoop(messages, enabledTools = [], maxTurns = 5, systemMessages = [], externalTools = []) {
     const toolCalls = [];
+    const externalToolCalls = [];
     let lastToolCallSignature = null;
 
-    // Build available tools string based on enabled tools
-    let toolsDescription = 'AVAILABLE TOOLS:\n';
+    // Build available tools string based on enabled tools (built-in only)
+    let toolsDescription = 'AVAILABLE TOOLS (Built-in):\n';
     const toolsList = enabledTools.length > 0 ? enabledTools : Object.keys(AVAILABLE_TOOLS);
 
     toolsList.forEach((toolName, index) => {
@@ -194,10 +210,22 @@ async function runAgentLoop(messages, enabledTools = [], maxTurns = 5) {
         }
     });
 
-    // Build system message
-    const systemMessage = {
-        role: 'system',
-        content: `You are an intelligent Agent with access to tools.
+    // Add external tools to description
+    if (externalTools.length > 0) {
+        toolsDescription += '\nADDITIONAL TOOLS (External - call these when needed):\n';
+        externalTools.forEach((tool, index) => {
+            const toolName = getToolName(tool);
+            if (!toolName) {
+                console.warn('External tool missing name:', tool);
+                return;
+            }
+            const toolDesc = (typeof tool === 'object' && tool.description) ? tool.description : 'External tool';
+            toolsDescription += `${toolsList.length + index + 1}. <TOOL><${toolName}>query</${toolName}></TOOL> - ${toolDesc}\n`;
+        });
+    }
+
+    // Build base system content
+    let baseSystemContent = `You are an intelligent Agent with access to tools.
 
 ${toolsDescription}
 
@@ -214,7 +242,20 @@ STRICT RESTRICTIONS:
 1. Always adhere to the user's instructions implicitly.
 2. Do not Hallucinate tool outputs. Only report what the tools return.
 3. If a task is impossible, admit it. Do not fake a successful result.
-`
+`;
+
+    // Append any additional system messages from the request
+    if (systemMessages.length > 0) {
+        baseSystemContent += '\n\nADDITIONAL INSTRUCTIONS:\n';
+        systemMessages.forEach(msg => {
+            baseSystemContent += msg + '\n';
+        });
+    }
+
+    // Build system message
+    const systemMessage = {
+        role: 'system',
+        content: baseSystemContent
     };
 
     // Prepend system message to conversation
@@ -229,6 +270,7 @@ STRICT RESTRICTIONS:
             return {
                 reply: aiResult.error,
                 tool_calls: toolCalls,
+                external_tool_calls: externalToolCalls,
                 usage: totalUsage,
                 error: true
             };
@@ -288,22 +330,40 @@ STRICT RESTRICTIONS:
             }
             lastToolCallSignature = currentSignature;
 
-            // Check if tool is enabled
-            const isToolEnabled = toolsList.some(t => t.toLowerCase() === toolName.toLowerCase());
+            // Check if tool is a built-in tool
+            const isBuiltInTool = toolsList.some(t => t.toLowerCase() === toolName.toLowerCase());
+            // Check if tool is an external tool
+            const externalTool = externalTools.find(t => {
+                const tName = getToolName(t);
+                return tName && tName.toLowerCase() === toolName.toLowerCase();
+            });
+
             let toolResult;
 
-            if (isToolEnabled) {
+            if (isBuiltInTool) {
+                // Execute built-in tool
                 toolResult = await executeTool(toolName, toolContent);
+                
+                // Record built-in tool call
+                toolCalls.push({
+                    tool: toolName,
+                    input: toolContent,
+                    output: toolResult
+                });
+            } else if (externalTool) {
+                // External tool - don't execute, just record the call
+                toolResult = `[External Tool Call] The tool "${toolName}" needs to be executed by the external application with input: "${toolContent}". Waiting for result...`;
+                
+                // Record external tool call
+                externalToolCalls.push({
+                    tool: toolName,
+                    input: toolContent,
+                    status: 'pending'
+                });
             } else {
-                toolResult = `Tool "${toolName}" is not enabled for this request.`;
+                // Tool not found
+                toolResult = `Tool "${toolName}" is not available. Available tools: ${toolsList.join(', ')}`;
             }
-
-            // Record tool call
-            toolCalls.push({
-                tool: toolName,
-                input: toolContent,
-                output: toolResult
-            });
 
             console.log(`[Agent Turn ${turn + 1}] Tool result: ${toolResult.substring(0, 100)}...`);
 
@@ -320,6 +380,7 @@ STRICT RESTRICTIONS:
             return {
                 reply: finalContent,
                 tool_calls: toolCalls,
+                external_tool_calls: externalToolCalls,
                 usage: totalUsage
             };
         }
@@ -331,6 +392,7 @@ STRICT RESTRICTIONS:
             return {
                 reply: cleanedContent,
                 tool_calls: toolCalls,
+                external_tool_calls: externalToolCalls,
                 usage: totalUsage
             };
         }
@@ -346,6 +408,7 @@ STRICT RESTRICTIONS:
     return {
         reply: "I apologize, but I'm having difficulty processing your request. Could you please rephrase or simplify your question?",
         tool_calls: toolCalls,
+        external_tool_calls: externalToolCalls,
         usage: totalUsage
     };
 }
@@ -376,7 +439,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { site, session_id, messages, tools } = req.body;
+        const { site, session_id, messages, tools, user_id, add_tools, additional_tools } = req.body;
 
         // Validate required fields
         if (!site || typeof site !== 'string') {
@@ -387,17 +450,32 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Missing or invalid "session_id" field' });
         }
 
+        // NEW: Require user_id for privacy
+        if (!user_id || typeof user_id !== 'string') {
+            return res.status(400).json({ error: 'Missing or invalid "user_id" field. Required for user privacy.' });
+        }
+
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return res.status(400).json({ error: 'Missing or invalid "messages" field. Must be a non-empty array.' });
         }
 
-        // Validate message format
+        // Validate message format and extract system messages
+        let systemMessages = [];
+        let conversationMessages = [];
+        
         for (const msg of messages) {
             if (!msg.role || !msg.content) {
                 return res.status(400).json({ error: 'Each message must have "role" and "content" fields' });
             }
             if (!['user', 'assistant', 'system'].includes(msg.role)) {
                 return res.status(400).json({ error: 'Message role must be "user", "assistant", or "system"' });
+            }
+            
+            // Separate system messages from conversation
+            if (msg.role === 'system') {
+                systemMessages.push(msg.content);
+            } else {
+                conversationMessages.push(msg);
             }
         }
 
@@ -407,22 +485,55 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: '"tools" must be an array if provided' });
         }
 
-        console.log(`[API /chat] Request from site: ${site}, session: ${session_id}, messages: ${messages.length}, tools: ${enabledTools.length || 'default'}`);
-
-        // Run the agent loop
-        const result = await runAgentLoop(messages, enabledTools);
-
-        // Return response
-        return res.status(200).json({
-            reply: result.reply,
-            tool_calls: result.tool_calls,
-            usage: result.usage,
-            debug: {
-                site: site,
-                session_id: session_id,
-                timestamp: new Date().toISOString()
+        // Validate additional_tools if provided
+        const externalTools = additional_tools || [];
+        if (additional_tools && !Array.isArray(additional_tools)) {
+            return res.status(400).json({ error: '"additional_tools" must be an array if provided' });
+        }
+        
+        // Validate each external tool has a name
+        for (const tool of externalTools) {
+            const toolName = getToolName(tool);
+            if (!toolName) {
+                return res.status(400).json({ 
+                    error: 'Each tool in "additional_tools" must be a string or an object with a "name" property' 
+                });
             }
-        });
+        }
+
+        // Validate add_tools flag
+        const shouldReturnToolCalls = add_tools === true;
+
+        console.log(`[API /chat] Request from site: ${site}, user: ${user_id}, session: ${session_id}, messages: ${messages.length}, tools: ${enabledTools.length || 'default'}, add_tools: ${shouldReturnToolCalls}`);
+
+        // Run the agent loop with system messages and additional tools
+        const result = await runAgentLoop(conversationMessages, enabledTools, 5, systemMessages, externalTools);
+
+        // Build response based on add_tools flag
+        const response = {
+            reply: result.reply,
+            usage: result.usage
+        };
+
+        // Only include tool_calls if add_tools is true
+        if (shouldReturnToolCalls) {
+            response.tool_calls = result.tool_calls || [];
+            
+            // Include external tool calls if they were made
+            if (result.external_tool_calls && result.external_tool_calls.length > 0) {
+                response.external_tool_calls = result.external_tool_calls;
+            }
+        }
+
+        // Debug info
+        response.debug = {
+            site: site,
+            user_id: user_id,
+            session_id: session_id,
+            timestamp: new Date().toISOString()
+        };
+
+        return res.status(200).json(response);
 
     } catch (error) {
         console.error('[API /chat] Error:', error);
