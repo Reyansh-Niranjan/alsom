@@ -444,6 +444,13 @@ export default async function handler(req, res) {
     }
 
     try {
+        // Validate request body exists
+        if (!req.body || typeof req.body !== 'object') {
+            return res.status(400).json({ 
+                error: 'Invalid request body. Please send a JSON object with Content-Type: application/json header.' 
+            });
+        }
+
         const { site, session_id, messages, tools, user_id, add_tools, additional_tools } = req.body;
 
         // Validate required fields
