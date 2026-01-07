@@ -28,6 +28,34 @@ VITE_GROQ_KEY=your_groq_api_key
 # Google Custom Search (Optional - for Web Search tool)
 VITE_GOOGLE_API_KEY=your_google_api_key
 VITE_GOOGLE_CX=your_search_engine_id
+
+## ElevenLabs (Voice)
+
+This project supports optional ElevenLabs voice features:
+
+- Text-to-Speech via serverless route `/api/tts`
+- Realtime Speech-to-Text (Scribe v2 Realtime) via `/api/scribe-token`
+
+### Required (server-side)
+
+Add these to your Vercel project env vars (or local `.env` used by your deployment runtime):
+
+- `ELEVENLABS_API_KEY` – ElevenLabs API key (never expose to the browser)
+- `ELEVENLABS_DEFAULT_VOICE_ID` – default voice id to use for `/api/tts`
+
+Optional:
+
+- `ELEVENLABS_TTS_MODEL_ID` (default: `eleven_flash_v2_5`)
+- `ELEVENLABS_OUTPUT_FORMAT` (default: `mp3_44100_128`)
+
+### Optional (client-side toggles)
+
+Set these in your local `.env` for Vite (or Vercel build-time env vars prefixed with `VITE_`):
+
+- `VITE_TTS_PROVIDER=elevenlabs` (otherwise defaults to browser Web Speech)
+- `VITE_STT_PROVIDER=elevenlabs` (otherwise defaults to browser SpeechRecognition)
+
+Note: If you set `VITE_STT_PROVIDER=elevenlabs`, the app will call `/api/scribe-token` to mint a single-use token.
 ```
 
 ### Getting Your Keys:

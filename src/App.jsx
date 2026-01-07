@@ -436,6 +436,7 @@ function App() {
             disabled={loading}
             theme={theme}
             onStateChange={toggleLiveMode}
+            authToken={session?.access_token}
           />
           <input
             type="text"
